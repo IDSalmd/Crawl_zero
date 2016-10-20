@@ -52,7 +52,16 @@ class Downloader:
             html = response.read()
             code = response.code
         except Exception as e:
-            print 'Download error'
+            print 'Download error:',str(e)
+            html = ''
+            if hasattr(e,'code'):
+                code = e.code
+                if num_retries > 0 and 500 <= code < 600:
+                    return self._get(url, headers, proxy, num_retries - 1, data)
+                else:
+                    code = None
+        return return {'html': html, 'code': code}
+
 
 
 
