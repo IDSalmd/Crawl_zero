@@ -60,7 +60,7 @@ class Downloader:
                     return self._get(url, headers, proxy, num_retries - 1, data)
                 else:
                     code = None
-        return return {'html': html, 'code': code}
+        return {'html': html, 'code': code}
 
 
 
@@ -79,7 +79,7 @@ class Throttle:
         last_accessed = self.domains.get(domain)
         if self.delay > 0 and last_accessed is not None:
             sleep_secs = self.delay - (datetime.now() - last_accessed).seconds
-            if sleep_secs > 0
+            if sleep_secs > 0:
                 time.sleep(sleep_secs)
         self.domains[domain] = datetime.now()
 
