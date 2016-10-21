@@ -2,13 +2,14 @@ import re
 import urlparse
 import urllib2
 import time
-from datetime import datetime
+import datetime
 import robotparser
-import Queue
+from downloader import Downloader
 
 
-def link_crawler(seed_url, link_regex=None, delay=5, max_depth=-1, max_urls=-1, headers=None, user_agent='wswp',
-                 proxy=None, num_retries=1, scrape_callback=None):
+def link_crawler(seed_url, link_regex=None, delay=5, max_depth=-1, max_urls=-1, user_agent='wswp',
+                 proxies=None, num_retries=1, scrape_callback=None, cache=None):
+
     """Crawl from the given seed URL following links matched by link_regex
     """
     # the queue of URL's that still need to be crawled
@@ -18,18 +19,21 @@ def link_crawler(seed_url, link_regex=None, delay=5, max_depth=-1, max_urls=-1, 
     # track how many URL's have been downloaded
     num_urls = 0
     rp = get_robots(seed_url)
+    D = Downloader(delay=delay, user_agent=user_agent, proxies=proxies, num_retries=num_retries, cache=cache)
+    '''
     throttle = Throttle(delay)
     headers = headers or {}
     if user_agent:
         headers['User-agent'] = user_agent
-
+    '''
     while crawl_queue:
         url = crawl_queue.pop()
         depth = seen[url]
         # check url passes robots.txt restrictions
         if rp.can_fetch(user_agent, url):
-            throttle.wait(url)
-            html = download(url, headers, proxy=proxy, num_retries=num_retries)
+            #throttle.wait(url)
+            #html = download(url, headers, proxy=proxy, num_retries=num_retries)
+            html = D(url)
             links = []
             if scrape_callback:
                 links.extend(scrape_callback(url, html) or [])
@@ -57,7 +61,7 @@ def link_crawler(seed_url, link_regex=None, delay=5, max_depth=-1, max_urls=-1, 
         else:
             print 'Blocked by robots.txt:', url
 
-
+'''
 class Throttle:
     """Throttle downloading by sleeping between requests to same domain
     """
@@ -78,8 +82,8 @@ class Throttle:
             if sleep_secs > 0:
                 time.sleep(sleep_secs)
         self.domains[domain] = datetime.now()
-
-
+'''
+'''
 def download(url, headers, proxy, num_retries, data=None):
     print 'Downloading:', url
     request = urllib2.Request(url, data, headers)
@@ -102,7 +106,7 @@ def download(url, headers, proxy, num_retries, data=None):
         else:
             code = None
     return html
-
+'''
 
 def normalize(seed_url, link):
     """Normalize this URL by removing hash and adding domain
@@ -136,6 +140,6 @@ def get_links(html):
 
 
 if __name__ == '__main__':
-    link_crawler('http://example.webscraping.com', '/(index|view)', delay=0, num_retries=1, user_agent='BadCrawler')
-    link_crawler('http://example.webscraping.com', '/(index|view)', delay=0, num_retries=1, max_depth=1,
-                 user_agent='GoodCrawler')
+    #link_crawler('http://example.webscraping.com', '/(index|view)', delay=0, num_retries=1, user_agent='BadCrawler')
+    link_crawler('http://example.webscraping.com/', '/(index|view)',
+                 delay=0, num_retries=1, max_depth=1, user_agent='GoodCrawler')

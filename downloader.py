@@ -10,8 +10,9 @@ DEFAULT_DELAY = 5
 DEFAULT_RETRIES = 1
 DEFAULT_TIMEOUT = 60
 
+
 class Downloader:
-    def __init__(self, delay=DEFAULT_DELAY, user_agent =DEFAULT_AGENT, proxies=None,num_retries=DEFAULT_RETRIES,
+    def __init__(self, delay=DEFAULT_DELAY, user_agent=DEFAULT_AGENT, proxies=None, num_retries=DEFAULT_RETRIES,
                  timeout=DEFAULT_TIMEOUT, opener=None, cache=None):
         socket.setdefaulttimeout(timeout)
         self.throttle = Throttle(delay)
@@ -27,16 +28,20 @@ class Downloader:
             try:
                 result = self.cache[url]
             except KeyError:
+                # url is not available in cache
                 pass
             else:
-                if self.num_retries > 0 and 500<= result['code'] < 600:
+                if self.num_retries > 0 and 500 <= result['code'] < 600:
+                    # server error so ignore result from cache and re-download
                     result = None
         if result is None:
+            # result was not loaded from cache so still need to download
             self.throttle.wait(url)
             proxy = random.choice(self.proxies) if self.proxies else None
-            headers = {'User-agent':self.user_agent}
+            headers = {'User-agent': self.user_agent}
             result = self.download(url, headers, proxy=proxy, num_retries=self.num_retries)
             if self.cache:
+                # save result to cache
                 self.cache[url] = result
         return result['html']
 
@@ -52,29 +57,31 @@ class Downloader:
             html = response.read()
             code = response.code
         except Exception as e:
-            print 'Download error:',str(e)
+            print 'Download error:', str(e)
             html = ''
-            if hasattr(e,'code'):
+            if hasattr(e, 'code'):
                 code = e.code
                 if num_retries > 0 and 500 <= code < 600:
+                    # retry 5XX HTTP errors
                     return self._get(url, headers, proxy, num_retries - 1, data)
-                else:
-                    code = None
+            else:
+                code = None
         return {'html': html, 'code': code}
 
 
-
-
-
 class Throttle:
-    '''
-    Throttle downloading by sleeping between requests to same domain
-    '''
-    def __init__(self,delay):
+    """Throttle downloading by sleeping between requests to same domain
+    """
+
+    def __init__(self, delay):
+        # amount of delay between downloads for each domain
         self.delay = delay
+        # timestamp of when a domain was last accessed
         self.domains = {}
 
-    def wait(self,url):
+    def wait(self, url):
+        """Delay if have accessed this domain recently
+        """
         domain = urlparse.urlsplit(url).netloc
         last_accessed = self.domains.get(domain)
         if self.delay > 0 and last_accessed is not None:
@@ -83,4 +90,7 @@ class Throttle:
                 time.sleep(sleep_secs)
         self.domains[domain] = datetime.now()
 
-
+if __name__ == '__main__':
+    url  = 'http://example.webscraping.com/'
+    D = Downloader()
+    html = D(url)
